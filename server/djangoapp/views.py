@@ -8,21 +8,30 @@ import logging
 import json
 from datetime import datetime
 from .models import CarMake, CarModel
+from .populate import initiate
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 #get car
 def get_cars(request):
-    count = CarMake.objects.filter().count()
-    print(count)
-    if(count == 0):
-        initiate()
-    car_models = CarModel.objects.select_related('car_make')
-    cars = []
-    for car_model in car_models:
-        cars.append({"CarModel": car_model.name, "CarMake": car_model.car_make.name})
-    return JsonResponse({"CarModels":cars})
+    try:
+        count = CarMake.objects.count()
+        logger.info(f"CarMake count: {count}")
+        
+        if count == 0:
+            initiate()  # Populate the database if CarMake is empty
+
+        car_models = CarModel.objects.select_related('car_make')
+        cars = [{"CarModel": car_model.name, "CarMake": car_model.car_make.name} for car_model in car_models]
+        
+        return JsonResponse({"CarModels": cars})
+
+    except Exception as e:
+        logger.error(f"Error fetching car models: {e}")
+        return JsonResponse({"error": "Something went wrong while fetching car data."}, status=500)
+
 
 # Create a `login_request` view to handle sign-in requests
 @csrf_exempt  # Only use @csrf_exempt if absolutely necessary (e.g., in development)
